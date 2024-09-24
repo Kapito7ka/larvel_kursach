@@ -9,10 +9,15 @@ class Saving extends Model
 {
     use HasFactory;
 
-    protected $table = 'saving';
-
     protected $fillable = [
         'ticket_number',
         'expired_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'expired_at' => 'datetime',
+        ];
+    }
 }

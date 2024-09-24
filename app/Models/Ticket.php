@@ -9,8 +9,6 @@ class Ticket extends Model
 {
     use HasFactory;
 
-    protected $table = 'tickets';
-
     protected $fillable = [
         'ticket_number',
         'datetime',
@@ -20,4 +18,12 @@ class Ticket extends Model
         'price',
         'discount_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'datetime' => 'datetime',
+            'price' => 'decimal:2',
+        ];
+    }
 }

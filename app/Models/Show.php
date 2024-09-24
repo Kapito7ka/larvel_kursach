@@ -9,12 +9,18 @@ class Show extends Model
 {
     use HasFactory;
 
-    protected $table = 'shows';
-
     protected $fillable = [
         'performance_id',
         'datetime',
         'price',
         'hall_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'datetime' => 'datetime',
+            'price' => 'decimal:2',
+        ];
+    }
 }

@@ -6,10 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Actor extends Model
-{
-    use HasFactory;
-
-    protected $table = 'actors';
+{use HasFactory;
 
     protected $fillable = [
         'first_name',
@@ -18,4 +15,11 @@ class Actor extends Model
         'passport',
         'phone_number',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'date_of_birth' => 'date',
+        ];
+    }
 }

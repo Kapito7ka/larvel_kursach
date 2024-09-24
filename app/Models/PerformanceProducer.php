@@ -7,9 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class PerformanceProducer extends Model
 {
-
-    protected $table = 'performance_producers';
-    
     protected $fillable = [
         'performance_id',
         'producer_id',
