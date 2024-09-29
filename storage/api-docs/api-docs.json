@@ -1,0 +1,21 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API TGUG",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api": {},
+        "/actors": {
+            "get": {
+                "summary": "List of actors",
+                "operationId": "2894780d444ea3efed366f1f9dd1ed31",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    }
+}
