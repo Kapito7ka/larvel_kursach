@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Actor extends Model
-{use HasFactory;
+{
+    use HasFactory;
 
     protected $fillable = [
         'first_name',
@@ -21,5 +22,14 @@ class Actor extends Model
         return [
             'date_of_birth' => 'date',
         ];
+    }
+
+    protected $appends = [
+        'full_name',
+    ];
+
+    public function getFullNameAttribute(): string
+    {
+        return $this->first_name . ' ' . $this->last_name;
     }
 }
