@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActorsController;
+use App\Http\Controllers\ProducerController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,6 +33,15 @@ Route::middleware('auth')->group(function () {
         Route::put('{actor}', [ActorsController::class, 'update'])->name('actors.update');
         Route::delete('{actor}', [ActorsController::class, 'destroy'])->name('actors.destroy');
         Route::put('{actor}/restore', [ActorsController::class, 'restore'])->name('actors.restore');
+    });
+
+    Route::prefix('producers')->group(function () {
+        Route::get('', [ProducerController::class, 'index'])->name('producers.index');
+        Route::get('create', [ProducerController::class, 'create'])->name('producers.create');
+        Route::post('', [ProducerController::class, 'store'])->name('producers.store');
+        Route::get('{producer}/edit', [ProducerController::class, 'edit'])->name('producers.edit');
+        Route::put('{producer}', [ProducerController::class, 'update'])->name('producers.update');
+        Route::delete('{producer}', [ProducerController::class, 'destroy'])->name('producers.destroy');
     });
 });
 
