@@ -36,6 +36,12 @@ export default function Authenticated({ header, children }) {
                                 >
                                     Actors
                                 </NavLink>
+                                <NavLink
+                                    href={route('producers')}
+                                    active={route().current('producers')}
+                                >
+                                    Producers
+                                </NavLink>
                             </div>
                         </div>
 

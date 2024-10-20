@@ -4,7 +4,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActorsController;
 use App\Http\Controllers\ProducerController;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -36,12 +35,13 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('producers')->group(function () {
-        Route::get('', [ProducerController::class, 'index'])->name('producers.index');
+        Route::get('', [ProducerController::class, 'index'])->name('producers');
         Route::get('create', [ProducerController::class, 'create'])->name('producers.create');
         Route::post('', [ProducerController::class, 'store'])->name('producers.store');
         Route::get('{producer}/edit', [ProducerController::class, 'edit'])->name('producers.edit');
         Route::put('{producer}', [ProducerController::class, 'update'])->name('producers.update');
         Route::delete('{producer}', [ProducerController::class, 'destroy'])->name('producers.destroy');
+        Route::put('{producer}/restore', [ProducerController::class, 'restore'])->name('producers.restore');
     });
 });
 
