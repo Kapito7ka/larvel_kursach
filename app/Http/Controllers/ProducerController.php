@@ -46,7 +46,7 @@ class ProducerController extends Controller
                 ],
                 'date_of_birth' => [
                     'required',
-                    'date', // Перевірка на коректний формат дати
+                    'date',
                 ],
             ])
         );
@@ -62,7 +62,7 @@ class ProducerController extends Controller
                 'last_name' => $producer->last_name,
                 'email' => $producer->email,
                 'phone_number' => $producer->phone_number,
-                'date_of_birth' => $producer->date_of_birth, // Додаємо дату народження
+                'date_of_birth' => $producer->date_of_birth,
                 'deleted_at' => $producer->deleted_at,
             ]
         ]);
