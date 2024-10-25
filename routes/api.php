@@ -9,5 +9,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix('actors')->group(function () {
-    Route::get('/', [ActorsController::class, 'index'])->name('api.actors');
+
+    Route::get('/', [ActorsController::class, 'index'])->name('api.actors.index');
+    
+    Route::get('/{id}', [ActorsController::class, 'show'])->name('api.actors.show');
 });

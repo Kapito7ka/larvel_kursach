@@ -72,6 +72,7 @@ class ActorsController extends Controller
                 'date_of_birth' => ['nullable', 'max:150'],
             ])
         );
+        
 
         return Redirect::back()->with('success', 'Actor updated.');
     }
