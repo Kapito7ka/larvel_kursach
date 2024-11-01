@@ -42,6 +42,18 @@ export default function Authenticated({ header, children }) {
                                 >
                                     Producers
                                 </NavLink>
+                                <NavLink
+                                    href={route('performances')}
+                                    active={route().current('performances')}
+                                >
+                                    Performances
+                                </NavLink>
+                                <NavLink
+                                    href={route('shows')} // Додано посилання на шоу
+                                    active={route().current('shows')}
+                                >
+                                    Shows
+                                </NavLink>
                             </div>
                         </div>
 
@@ -145,6 +157,30 @@ export default function Authenticated({ header, children }) {
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('actors')}
+                            active={route().current('actors')}
+                        >
+                            Actors
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('producers')}
+                            active={route().current('producers')}
+                        >
+                            Producers
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('performances')}
+                            active={route().current('performances')}
+                        >
+                            Performances
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('shows')}
+                            active={route().current('shows')}
+                        >
+                            Shows
                         </ResponsiveNavLink>
                     </div>
 

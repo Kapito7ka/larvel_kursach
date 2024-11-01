@@ -13,7 +13,7 @@ class ActorsController extends Controller
     {
         return Inertia::render('Actors/Index', [
             'actors' => Actor::paginate(),
-            'filters' => Request::all('search', 'trashed')
+            'filters' => Request::all('search', 'trashed'),
         ]);
     }
 
@@ -40,7 +40,12 @@ class ActorsController extends Controller
                 ],
                 'date_of_birth' => [
                     'nullable',
-                    'max:150',
+                    'date',
+                ],
+                'passport' => [
+                    'nullable',
+                    'string',
+                    'max:50',
                 ],
             ])
         );
@@ -55,10 +60,11 @@ class ActorsController extends Controller
                 'id' => $actor->id,
                 'first_name' => $actor->first_name,
                 'last_name' => $actor->last_name,
-                'email' => $actor->email,
                 'phone_number' => $actor->phone_number,
+                'date_of_birth' => $actor->date_of_birth,
+                'passport' => $actor->passport,
                 'deleted_at' => $actor->deleted_at,
-            ]
+            ],
         ]);
     }
 
@@ -69,7 +75,12 @@ class ActorsController extends Controller
                 'first_name' => ['required', 'max:50'],
                 'last_name' => ['required', 'max:50'],
                 'phone_number' => ['nullable', 'max:50'],
-                'date_of_birth' => ['nullable', 'max:150'],
+                'date_of_birth' => ['nullable', 'date'],
+                'passport' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
             ])
         );
 
