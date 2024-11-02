@@ -42,6 +42,10 @@ class ActorsController extends Controller
                     'nullable',
                     'max:150',
                 ],
+                'passport' => [
+                    'nullable',
+                    'max:50'
+                ],
             ])
         );
 
@@ -58,6 +62,7 @@ class ActorsController extends Controller
                 'email' => $actor->email,
                 'phone_number' => $actor->phone_number,
                 'deleted_at' => $actor->deleted_at,
+                'passport' => $actor->passport,
             ]
         ]);
     }
@@ -70,6 +75,7 @@ class ActorsController extends Controller
                 'last_name' => ['required', 'max:50'],
                 'phone_number' => ['nullable', 'max:50'],
                 'date_of_birth' => ['nullable', 'max:150'],
+                'passport' => ['nullable', 'max:50'],
             ])
         );
 
