@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActorsController;
+use App\Http\Controllers\Api\TicketsController;
+use App\Http\Controllers\Api\PerformancesController; // Додано
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,5 +36,6 @@ Route::middleware('auth')->group(function () {
         Route::put('{actor}/restore', [ActorsController::class, 'restore'])->name('actors.restore');
     });
 });
+
 
 require __DIR__.'/auth.php';
