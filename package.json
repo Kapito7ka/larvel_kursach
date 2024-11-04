@@ -26,11 +26,7 @@
         "vite": "^5.0"
     },
     "dependencies": {
-<<<<<<< Updated upstream
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/vue3": "^1.2.0"
-=======
-        "@inertiajs/inertia": "^0.11.1"
->>>>>>> Stashed changes
     }
 }
