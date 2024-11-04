@@ -21,4 +21,5 @@ yarn-error.log
 /.vscode
 /.composer
 /.npm
+.bash_history
 
