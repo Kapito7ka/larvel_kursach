@@ -64,3 +64,67 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Work with custom docker
+
+### Local
+
+#### Add missed .env variables
+
+```dotenv
+PHP_IMAGE=app/php
+```
+
+#### Build images
+
+```bash
+docker compose -f docker-compose.build.yml build
+```
+#### Up docker local containers
+
+```bash
+docker compose -f docker-compose.local.yml up
+```
+
+#### Use bash from local php container
+
+```bash
+docker compose -f docker-compose.local.yml exec php bash
+```
+
+#### IMPORTANT
+
+Do not forget to install composer dependencies (trough bash inside container), execute migrations, install npm and build 
+
+### Deployment to dev/prod servers 
+
+## Work with custom docker
+
+### Local
+
+#### Add missed .env variables
+
+```dotenv
+PHP_IMAGE=app/php
+```
+
+#### Build images
+
+```bash
+docker compose -f docker-compose.build.yml build
+```
+#### Up docker local containers
+
+```bash
+docker compose -f docker-compose.production.yml up
+```
+
+#### Use bash from local php container
+
+```bash
+docker compose -f docker-compose.production .yml exec php bash
+```
+
+#### IMPORTANT
+
+Do not forget to install composer dependencies (trough bash inside container), execute migrations, install npm and build
