@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  php:
+    image: '${PHP_IMAGE}'
+    build:
+      context: ./docker/php
+      dockerfile: ./Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
