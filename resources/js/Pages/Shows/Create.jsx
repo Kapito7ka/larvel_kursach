@@ -11,7 +11,6 @@ export default function Create({ performances, halls }) {
         hall_id: '',
         datetime: '',
         price: '',
-        hall_id: '',
     });
 
     const handleChange = (e) => {
