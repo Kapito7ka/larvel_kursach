@@ -8,9 +8,9 @@ export default function Create() {
     const { data, setData, post, errors, processing } = useForm({
         first_name: '',
         last_name: '',
-        date_of_birth: '',
-        passport: '',
         phone_number: '',
+        date_of_birth: '2000-01-01',
+        passport: '', // Додано поле passport
     });
 
     const handleChange = (e) => {

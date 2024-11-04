@@ -60,6 +60,7 @@ class ActorsController extends Controller
                 'id' => $actor->id,
                 'first_name' => $actor->first_name,
                 'last_name' => $actor->last_name,
+                'email' => $actor->email,
                 'phone_number' => $actor->phone_number,
                 'date_of_birth' => $actor->date_of_birth,
                 'passport' => $actor->passport,

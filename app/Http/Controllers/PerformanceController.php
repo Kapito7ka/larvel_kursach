@@ -1,9 +1,12 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use App\Models\Performance;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
+
 class PerformanceController extends Controller
 {
     public function index()
@@ -63,12 +66,14 @@ class PerformanceController extends Controller
     public function destroy(Performance $performance)
     {
         $performance->delete();
+
         return Redirect::back()->with('success', 'Performance deleted.');
     }
 
     public function restore(Performance $performance)
     {
         $performance->restore();
+
         return Redirect::back()->with('success', 'Performance restored.');
     }
 }

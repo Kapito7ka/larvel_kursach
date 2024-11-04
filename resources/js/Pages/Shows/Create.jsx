@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.jsx';
 import TextInput from '@/Components/TextInput';
@@ -8,6 +8,7 @@ import LoadingButton from '@/Components/LoadingButton';
 export default function Create({ performances, halls }) {
     const { data, setData, post, errors, processing } = useForm({
         performance_id: '',
+        hall_id: '',
         datetime: '',
         price: '',
         hall_id: '',
@@ -21,7 +22,7 @@ export default function Create({ performances, halls }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('shows.store')); // Ensure your route is correct
+        post(route('shows.store'));
     };
 
     return (
