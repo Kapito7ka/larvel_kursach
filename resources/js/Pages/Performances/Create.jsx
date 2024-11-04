@@ -27,7 +27,7 @@ export default function Create() {
                 <form onSubmit={handleSubmit}>
                     <div className="p-8 -mr-6 -mb-8 flex flex-wrap">
                         <TextInput
-                            className="pr-6 pb-8 w-full"
+                            className="pr-6 pb-8 w-full lg:w-1/2"
                             label="Title"
                             name="title"
                             errors={errors.title}
@@ -35,7 +35,7 @@ export default function Create() {
                             onChange={handleChange}
                         />
                         <TextInput
-                            className="pr-6 pb-8 w-full"
+                            className="pr-6 pb-8 w-full lg:w-1/2"
                             label="Duration (minutes)"
                             name="duration"
                             type="number"

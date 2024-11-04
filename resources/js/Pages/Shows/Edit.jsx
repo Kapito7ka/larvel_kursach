@@ -11,6 +11,7 @@ import TrashedMessage from '@/Components/TrashedMessage';
 
 export default () => {
     const { show, performances, halls, errors } = usePage().props;
+
     const [sending, setSending] = useState(false);
 
     const [values, setValues] = useState({
@@ -52,12 +53,9 @@ export default () => {
     return (
         <AuthenticatedLayout>
             <div>
-                <Helmet title={`Show ${values.datetime}`} />
+                <Helmet title={`Edit Show`} />
                 <h1 className="mb-8 font-bold text-3xl">
-                    <Link
-                        href={route('shows')}
-                        className="text-indigo-600 hover:text-indigo-700"
-                    >
+                    <Link href={route('shows')} className="text-indigo-600 hover:text-indigo-700">
                         Shows
                     </Link>
                     <span className="text-indigo-600 font-medium mx-2">/</span>
@@ -83,6 +81,21 @@ export default () => {
                                 {performances.map((performance) => (
                                     <option key={performance.id} value={performance.id}>
                                         {performance.title}
+                                    </option>
+                                ))}
+                            </SelectInput>
+                            <SelectInput
+                                className="pr-6 pb-8 w-full lg:w-1/2"
+                                label="Hall"
+                                name="hall_id"
+                                errors={errors.hall_id}
+                                value={values.hall_id}
+                                onChange={handleChange}
+                            >
+                                <option value="">Select Hall</option>
+                                {halls.map((hall) => (
+                                    <option key={hall.id} value={hall.id}>
+                                        Hall {hall.hall_number}
                                     </option>
                                 ))}
                             </SelectInput>

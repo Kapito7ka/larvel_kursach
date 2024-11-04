@@ -1,5 +1,6 @@
 <?php
-
+use App\Http\Controllers\ShowsController;
+use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActorsController;
 use App\Http\Controllers\ProducerController;

@@ -23,4 +23,12 @@ class Show extends Model
             'price' => 'decimal:2',
         ];
     }
+    public function performance()
+    {
+        return $this->belongsTo(Performance::class, 'performance_id');
+    }
+    public function hall()
+    {
+        return $this->belongsTo(Hall::class, 'hall_id');
+    }
 }

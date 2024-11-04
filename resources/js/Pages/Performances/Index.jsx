@@ -6,7 +6,7 @@ import Pagination from '@/Components/Pagination.jsx';
 import SearchFilter from '@/Components/SearchFilter';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function () {
+export default function Index() {
     const { performances } = usePage().props;
     const { data, links } = performances;
 
@@ -39,7 +39,7 @@ export default function () {
                         </thead>
                         <tbody>
                         {data.map(
-                            ({ id, title, duration, deleted_at }) => (
+                            ({ id, title, duration }) => ( // видалено producers
                                 <tr
                                     key={id}
                                     className="hover:bg-gray-100 focus-within:bg-gray-100"

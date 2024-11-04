@@ -6,7 +6,7 @@ import Pagination from '@/Components/Pagination.jsx';
 import SearchFilter from '@/Components/SearchFilter';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function () {
+export default function ShowIndex() {
     const { shows } = usePage().props;
     const { data, links } = shows;
 
@@ -33,15 +33,15 @@ export default function () {
                         <thead>
                         <tr className="text-left font-bold">
                             <th className="px-6 pt-5 pb-4">Performance</th>
+                            <th className="px-6 pt-5 pb-4">Hall</th>
                             <th className="px-6 pt-5 pb-4">Date & Time</th>
                             <th className="px-6 pt-5 pb-4">Price</th>
-                            <th className="px-6 pt-5 pb-4">Hall</th>
                             <th className="px-6 pt-5 pb-4"></th>
                         </tr>
                         </thead>
                         <tbody>
                         {data.map(
-                            ({ id, performance, datetime, price, hall }) => (
+                            ({ id, performance, hall, datetime, price, deleted_at }) => (
                                 <tr
                                     key={id}
                                     className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -52,6 +52,12 @@ export default function () {
                                             className="px-6 py-4 flex items-center focus:text-indigo-700"
                                         >
                                             {performance.title}
+                                            {deleted_at && (
+                                                <Icon
+                                                    name="trash"
+                                                    className="flex-shrink-0 w-3 h-3 text-gray-400 fill-current ml-2"
+                                                />
+                                            )}
                                         </Link>
                                     </td>
                                     <td className="border-t">
@@ -110,4 +116,4 @@ export default function () {
             </div>
         </AuthenticatedLayout>
     );
-};
+}
