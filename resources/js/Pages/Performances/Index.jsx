@@ -39,7 +39,7 @@ export default function Index() {
                         </thead>
                         <tbody>
                         {data.map(
-                            ({ id, title, duration }) => ( // видалено producers
+                            ({ id, title, duration, deleted_at }) => ( // видалено producers
                                 <tr
                                     key={id}
                                     className="hover:bg-gray-100 focus-within:bg-gray-100"
