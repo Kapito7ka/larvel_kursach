@@ -1,11 +1,10 @@
 <?php
+use App\Http\Controllers\ShowStatisticsController;
 use App\Http\Controllers\ShowsController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActorsController;
 use App\Http\Controllers\ProducerController;
-use App\Http\Controllers\PerformanceController;
-use App\Http\Controllers\ShowsController;
 use Illuminate\Foundation\Application;
 use Inertia\Inertia;
 
@@ -65,6 +64,15 @@ Route::get('/dashboard', function () {
         Route::put('{show}', [ShowsController::class, 'update'])->name('shows.update');
         Route::delete('{show}', [ShowsController::class, 'destroy'])->name('shows.destroy');
         Route::put('{show}/restore', [ShowsController::class, 'restore'])->name('shows.restore');
+    });
+    Route::prefix('statistics')->group(function () {
+        Route::get('', [ShowStatisticsController::class, 'index'])->name('statistics');
+        Route::get('create', [ShowStatisticsController::class, 'create'])->name('statistics.create');
+        Route::post('', [ShowStatisticsController::class, 'store'])->name('statistics.store');
+        Route::get('{statistic}/edit', [ShowStatisticsController::class, 'edit'])->name('statistics.edit');
+        Route::put('{statistic}', [ShowStatisticsController::class, 'update'])->name('statistics.update');
+        Route::delete('{statistic}', [ShowStatisticsController::class, 'destroy'])->name('statistics.destroy');
+        Route::put('{statistic}/restore', [ShowStatisticsController::class, 'restore'])->name('statistics.restore');
     });
 });
 
