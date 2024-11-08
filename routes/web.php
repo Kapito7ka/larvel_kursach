@@ -3,9 +3,7 @@ use App\Http\Controllers\ShowsController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActorsController;
-use App\Http\Controllers\ProducerController;
-use App\Http\Controllers\PerformanceController;
-use App\Http\Controllers\ShowsController;
+use App\Http\Controllers\Api\ProducersController;
 use Illuminate\Foundation\Application;
 use Inertia\Inertia;
 
@@ -38,13 +36,13 @@ Route::get('/dashboard', function () {
 
 
     Route::prefix('producers')->group(function () {
-        Route::get('', [ProducerController::class, 'index'])->name('producers');
-        Route::get('create', [ProducerController::class, 'create'])->name('producers.create');
-        Route::post('', [ProducerController::class, 'store'])->name('producers.store');
-        Route::get('{producer}/edit', [ProducerController::class, 'edit'])->name('producers.edit');
-        Route::put('{producer}', [ProducerController::class, 'update'])->name('producers.update');
-        Route::delete('{producer}', [ProducerController::class, 'destroy'])->name('producers.destroy');
-        Route::put('{producer}/restore', [ProducerController::class, 'restore'])->name('producers.restore');
+        Route::get('', [ProducersController::class, 'index'])->name('producers');
+        Route::get('create', [ProducersController::class, 'create'])->name('producers.create');
+        Route::post('', [ProducersController::class, 'store'])->name('producers.store');
+        Route::get('{producer}/edit', [ProducersController::class, 'edit'])->name('producers.edit');
+        Route::put('{producer}', [ProducersController::class, 'update'])->name('producers.update');
+        Route::delete('{producer}', [ProducersController::class, 'destroy'])->name('producers.destroy');
+        Route::put('{producer}/restore', [ProducersController::class, 'restore'])->name('producers.restore');
     });
 
     Route::prefix('performances')->group(function () {
