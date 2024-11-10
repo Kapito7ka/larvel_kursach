@@ -11,10 +11,17 @@ class Performance extends Model
     protected $fillable = [
         'title',
         'duration',
+        'producer',
+        'image'
+    ];
+
+    protected $casts = [
+        'duration' => 'integer',
+        'producer' => 'integer'
     ];
 
     public function producer()
     {
-        return $this->belongsToMany(Producer::class, 'performance_producers');
+        return $this->belongsTo(Producer::class, 'producer');
     }
 }

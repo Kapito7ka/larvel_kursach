@@ -3,37 +3,53 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProducerRequest;
 use App\Models\Producer;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use Carbon\Carbon;
 
 class ProducersController extends Controller
 {
-    public function index(): JsonResponse
+    public function index()
     {
         $producers = Producer::all();
         return response()->json($producers);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreProducerRequest $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:producers,email',
-            'phone_number' => 'required|string|max:20',
-        ]);
+        try {
+            $dateOfBirth = Carbon::createFromFormat('d/m/Y', $request->date_of_birth)->format('Y-m-d');
+            
+            $producer = Producer::create([
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'date_of_birth' => $dateOfBirth,
+            ]);
 
-        $producer = Producer::create($validated);
-        return response()->json($producer, 201);
+            return response()->json([
+                'message' => 'Продюсера успішно створено',
+                'producer' => $producer
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Помилка створення продюсера: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
+            return response()->json([
+                'message' => 'Помилка при створенні продюсера',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function show(Producer $producer): JsonResponse
+    public function show(Producer $producer)
     {
         return response()->json($producer);
     }
 
-    public function update(Request $request, Producer $producer): JsonResponse
+    public function update(Request $request, Producer $producer)
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -46,7 +62,7 @@ class ProducersController extends Controller
         return response()->json($producer);
     }
 
-    public function destroy(Producer $producer): JsonResponse
+    public function destroy(Producer $producer)
     {
         $producer->delete();
         return response()->json(null, 204);

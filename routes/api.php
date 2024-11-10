@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProducerController;
 use App\Http\Controllers\Api\ProducersController;
 use App\Http\Controllers\Api\TicketsController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UsersController;
 
 Route::group(['middleware' => ['api']], function () {
     Route::options('/{any}', function () {
@@ -19,21 +20,17 @@ Route::group(['middleware' => ['api']], function () {
         return response()->json(['message' => 'pong']);
     });
 
-    Route::get('/test', function () {
-        return response()->json(['message' => 'API works!']);
-    });
-
     Route::get('/user', function (Request $request) {
         return $request->user();
     })->middleware('auth:sanctum');
 
     Route::prefix('actors')->group(function () {
         Route::get('/', [ActorsController::class, 'index']);
-        Route::post('/', [ActorsController::class, 'store']);
-        Route::post('/{actor}', [ActorsController::class, 'create']);
+        Route::post('/', [ActorsController::class, 'store'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::post('/{actor}', [ActorsController::class, 'create'])->middleware(['auth:sanctum', 'is_admin']);
         Route::get('/{actor}', [ActorsController::class, 'show']);
-        Route::put('/{actor}', [ActorsController::class, 'update']);
-        Route::delete('/{actor}', [ActorsController::class, 'destroy']);
+        Route::put('/{actor}', [ActorsController::class, 'update'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::delete('/{actor}', [ActorsController::class, 'destroy'])->middleware(['auth:sanctum', 'is_admin']);
     });
 
     Route::prefix('shows')->group(function () {
@@ -46,18 +43,21 @@ Route::group(['middleware' => ['api']], function () {
 
     Route::prefix('performances')->group(function () {
         Route::get('/', [PerformancesController::class, 'index']);
-        Route::post('/', [PerformancesController::class, 'store']);
         Route::get('/{performance}', [PerformancesController::class, 'show']);
-        Route::put('/{performance}', [PerformancesController::class, 'update']);
-        Route::delete('/{performance}', [PerformancesController::class, 'destroy']);
+        
+        Route::middleware(['auth:sanctum', 'is_admin'])->group(function () {
+            Route::post('/', [PerformancesController::class, 'store']);
+            Route::put('/{performance}', [PerformancesController::class, 'update']);
+            Route::delete('/{performance}', [PerformancesController::class, 'destroy']);
+        });
     });
 
     Route::prefix('producers')->group(function () {
         Route::get('/', [ProducersController::class, 'index']);
-        Route::post('/', [ProducersController::class, 'store']);
+        Route::post('/', [ProducersController::class, 'store'])->middleware(['auth:sanctum', 'is_admin']);
         Route::get('/{producer}', [ProducersController::class, 'show']);
-        Route::put('/{producer}', [ProducersController::class, 'update']);
-        Route::delete('/{producer}', [ProducersController::class, 'destroy']);
+        Route::put('/{producer}', [ProducersController::class, 'update'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::delete('/{producer}', [ProducersController::class, 'destroy'])->middleware(['auth:sanctum', 'is_admin']);
     });
 
     Route::prefix('tickets')->group(function () {
@@ -67,5 +67,45 @@ Route::group(['middleware' => ['api']], function () {
         Route::post('/', [TicketsController::class, 'store']);
     });
 
-    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UsersController::class, 'index'])->middleware(['auth:sanctum', 'is_admin']);
+    });
+
 });
+
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
+    Route::post('/login/admin', [AuthController::class, 'loginAdmin']);
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::prefix('actors')->group(function () {
+            Route::post('/', [ActorsController::class, 'store']);
+            Route::put('/{actor}', [ActorsController::class, 'update']);
+            Route::delete('/{actor}', [ActorsController::class, 'destroy']);
+        });
+
+        Route::prefix('performances')->group(function () {
+            Route::post('/', [PerformancesController::class, 'store']);
+            Route::put('/{performance}', [PerformancesController::class, 'update']);
+            Route::delete('/{performance}', [PerformancesController::class, 'destroy']);
+        });
+
+        Route::prefix('producers')->group(function () {
+            Route::post('/', [ProducersController::class, 'store']);
+            Route::put('/{producer}', [ProducersController::class, 'update']);
+            Route::delete('/{producer}', [ProducersController::class, 'destroy']);
+        });
+        Route::prefix('users')->group(function () {
+            Route::get('/', [UsersController::class, 'index']);
+        });
+    });
+});
+
