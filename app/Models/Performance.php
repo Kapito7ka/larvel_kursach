@@ -24,4 +24,14 @@ class Performance extends Model
     {
         return $this->belongsTo(Producer::class, 'producer');
     }
+
+    public function genres()
+    {
+        return $this->belongsToMany(Genre::class, 'performance_genres');
+    }
+
+    public function shows()
+    {
+        return $this->hasMany(Show::class);
+    }
 }

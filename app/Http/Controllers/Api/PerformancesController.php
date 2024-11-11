@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filters\PerformanceFilter;
 use App\Http\Requests\StorePerformanceRequest;
 use App\Models\Performance;
+use App\Models\Genre;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use App\Models\Show;
 
 class PerformancesController extends ApiController
 {
@@ -35,6 +38,10 @@ class PerformancesController extends ApiController
                 'image' => $validated['image'] ?? null
             ]);
 
+            if (isset($validated['genre_id'])) {
+                $performance->genres()->attach($validated['genre_id']);
+            }
+
             return response()->json([
                 'message' => 'Виставу успішно створено',
                 'performance' => $performance
@@ -48,6 +55,29 @@ class PerformancesController extends ApiController
 
             return response()->json([
                 'message' => 'Помилка при створенні вистави',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);
+        }
+    }
+
+    public function showGenres()
+    {
+        try {
+            Log::info('Початок запиту жанрів');
+            
+            $genres = Genre::all();
+            Log::info('Отримані жанри:', $genres->toArray());
+
+            return response()->json($genres);
+        } catch (\Exception $e) {
+            Log::error('Помилка при отриманні жанрів:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'message' => 'Помилка при отриманні жанрів',
                 'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
             ], 500);
         }
@@ -68,5 +98,27 @@ class PerformancesController extends ApiController
     public function date($date)
     {
         return $this->builder->whereDate('performance_date', '=', $date);
+    }
+
+    public function shows(Performance $performance)
+    {
+        try {
+            $shows = Show::where('performance_id', $performance->id)
+                ->with(['hall'])
+                ->orderBy('datetime')
+                ->get();
+
+            return response()->json($shows);
+        } catch (\Exception $e) {
+            Log::error('Помилка при отриманні показів:', [
+                'performance_id' => $performance->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Помилка при отриманні показів',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);
+        }
     }
 }

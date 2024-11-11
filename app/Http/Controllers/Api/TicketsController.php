@@ -3,100 +3,166 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Ticket;
+use App\Models\Seat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Annotations as OA;
 
 class TicketsController extends ApiController
 {
-    // Метод для отримання списку всіх квитків
-    public function index(): JsonResponse {
+    /**
+     * Метод для отримання списку всіх квитків
+     */
+    public function index(): JsonResponse
+    {
         $tickets = Ticket::all();
         return response()->json($tickets);
     }
 
-    // Метод для отримання окремого квитка за його ID
-    public function show(int $id): JsonResponse {
+    /**
+     * Метод для отримання окремого квитка за його ID
+     */
+    public function show(int $id): JsonResponse
+    {
         $ticket = Ticket::find($id);
 
         if (!$ticket) {
-            return response()->json(['message' => 'Ticket not found'], 404);
+            return response()->json(['message' => 'Квиток не знайдений'], 404);
         }
 
         return response()->json($ticket);
     }
 
     /**
-     * @OA\Get(
-     *     path="/tickets/user/{user_id}",
-     *     summary="Get all tickets for a specific user",
-     *     @OA\Parameter(
-     *         name="user_id",
-     *         in="path",
-     *         required=true,
-     *         description="ID of the user",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="OK"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="User has no tickets"
-     *     )
-     * )
+     * Метод для бронювання квитків
      */
-    public function getUserTickets(int $user_id): JsonResponse {
-        $tickets = Ticket::where('user_id', $user_id)->get();
+    public function bookTickets(Request $request): JsonResponse
+    {
+        try {
+            \DB::beginTransaction();
 
-        if ($tickets->isEmpty()) {
-            return response()->json(['message' => 'User has no tickets'], 404);
+            \Log::info('Отримано запит на бронювання квитків', ['request' => $request->all()]);
+
+            $validated = $request->validate([
+                'tickets' => 'required|array',
+                'tickets.*.show_id' => 'required|integer|exists:shows,id',
+                'tickets.*.seat_id' => 'required|integer|exists:seats,id',
+                'discount_id' => 'nullable|integer|exists:discounts,id'
+            ]);
+
+            \Log::info('Валідація успішна', ['validated' => $validated]);
+
+            $bookedTickets = [];
+            $userId = auth()->id();
+
+            \Log::info('ID користувача після авторизації', ['userId' => $userId]);
+
+            if (!$userId) {
+                \DB::rollBack();
+                \Log::warning('Користувач не аутентифікований');
+                return response()->json([
+                    'message' => 'Користувач не аутентифікований'
+                ], 401);
+            }
+
+            foreach ($validated['tickets'] as $ticketData) {
+                \Log::info('Обробка квитка', ['ticketData' => $ticketData]);
+
+                $show = \App\Models\Show::findOrFail($ticketData['show_id']);
+                \Log::info('Знайдений показ', ['show' => $show]);
+
+                // Перевірка, чи належить місце до залу показу
+                $seat = Seat::findOrFail($ticketData['seat_id']);
+                $seatExists = ($seat->hall_id === $show->hall_id);
+
+                \Log::info('Перевірка належності місця до залу', ['seatExists' => $seatExists]);
+
+                if (!$seatExists) {
+                    \DB::rollBack();
+                    \Log::warning('Вибране місце не належить до залу показу', [
+                        'seat_id' => $ticketData['seat_id'],
+                        'show_id' => $ticketData['show_id']
+                    ]);
+                    return response()->json([
+                        'message' => 'Вибране місце не належить до залу показу',
+                        'seat_id' => $ticketData['seat_id'],
+                        'show_id' => $ticketData['show_id']
+                    ], 400);
+                }
+
+                // Використання блокування для запобігання одночасного бронювання
+                $existingTicket = Ticket::where('show_id', $ticketData['show_id'])
+                                        ->where('seat_id', $ticketData['seat_id'])
+                                        ->whereNull('user_id') // Шукаємо незаброньований квиток
+                                        ->lockForUpdate()
+                                        ->first();
+
+                \Log::info('Перевірка існуючого бронювання', ['existingTicket' => $existingTicket]);
+
+                if (!$existingTicket) {
+                    \DB::rollBack();
+                    \Log::warning('Місце вже заброньоване', [
+                        'seat_id' => $ticketData['seat_id'],
+                        'show_id' => $ticketData['show_id']
+                    ]);
+                    return response()->json([
+                        'message' => 'Місце вже заброньоване',
+                        'seat_id' => $ticketData['seat_id'],
+                        'show_id' => $ticketData['show_id']
+                    ], 409);
+                }
+
+                // Розрахунок ціни з урахуванням знижки
+                $finalPrice = $show->price;
+                if (isset($validated['discount_id'])) {
+                    $discount = \App\Models\Discount::find($validated['discount_id']);
+                    \Log::info('Знайдений знижка', ['discount' => $discount]);
+                    if ($discount && is_numeric($discount->percentage)) {
+                        $finalPrice = $show->price * (1 - $discount->percentage / 100);
+                    } else {
+                        \Log::warning('Некоректний відсоток знижки або знижка не знайдена', ['discount' => $discount]);
+                    }
+                }
+
+                \Log::info('Розрахована фінальна ціна', ['finalPrice' => $finalPrice]);
+
+                // Генерація ticket_number з інформацією про ряд та місце
+                $ticketNumber = 'TKT' . uniqid() . '-R' . $seat->row . 'S' . $seat->number;
+
+                // Оновлюємо існуючий квиток замість створення нового
+                $existingTicket->update([
+                    'ticket_number' => $ticketNumber,
+                    'date' => $show->datetime->toDateString(),
+                    'time' => $show->datetime->format('H:i:s'),
+                    'user_id' => $userId,
+                    'price' => $finalPrice,
+                    'discount_id' => $validated['discount_id'] ?? null
+                ]);
+
+                \Log::info('Оновлено квиток', ['ticket' => $existingTicket]);
+
+                $bookedTickets[] = $existingTicket;
+            }
+
+            \DB::commit();
+            \Log::info('Транзакція успішно завершена');
+
+            return response()->json([
+                'message' => 'Квитки успішно заброньовані',
+                'tickets' => $bookedTickets
+            ], 201);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Помилка при бронюванні квитків:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Помилка при бронюванні квитків',
+                'error' => config('app.debug') ? $e->getMessage() : 'Помилка сервера'
+            ], 500);
         }
-
-        return response()->json($tickets);
-    }
-
-    /**
-     * @OA\Post(
-     *     path="/tickets",
-     *     summary="Add a new ticket",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"ticket_number", "datetime", "show_id", "seat_id", "user_id", "price"},
-     *             @OA\Property(property="ticket_number", type="string"),
-     *             @OA\Property(property="datetime", type="string", format="date-time"),
-     *             @OA\Property(property="show_id", type="integer"),
-     *             @OA\Property(property="seat_id", type="integer"),
-     *             @OA\Property(property="user_id", type="integer"),
-     *             @OA\Property(property="price", type="number", format="decimal"),
-     *             @OA\Property(property="discount_id", type="integer")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Ticket created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Bad request"
-     *     )
-     * )
-     */
-    public function store(Request $request): JsonResponse {
-        $validated = $request->validate([
-            'ticket_number' => 'required|string|max:255',
-            'datetime' => 'required|date',
-            'show_id' => 'required|integer',
-            'seat_id' => 'required|integer',
-            'user_id' => 'required|integer',
-            'price' => 'required|numeric',
-            'discount_id' => 'nullable|integer'
-        ]);
-
-        $ticket = Ticket::create($validated);
-
-        return response()->json($ticket, 201);
     }
 }

@@ -35,16 +35,23 @@ Route::group(['middleware' => ['api']], function () {
 
     Route::prefix('shows')->group(function () {
         Route::get('/', [ShowsController::class, 'index']);
-        Route::post('/', [ShowsController::class, 'store']);
+        Route::get('/hall', [ShowsController::class, 'getHalls']);
+        Route::get('/{show}/seats', [ShowsController::class, 'getShowSeats']);
+        Route::post('/hall', [ShowsController::class, 'storeHall'])->middleware(['auth:sanctum', 'is_admin']);
         Route::get('/{show}', [ShowsController::class, 'show']);
-        Route::put('/{show}', [ShowsController::class, 'update']);
-        Route::delete('/{show}', [ShowsController::class, 'destroy']);
+        Route::post('/', [ShowsController::class, 'store'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::put('/{show}', [ShowsController::class, 'update'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::delete('/{show}', [ShowsController::class, 'destroy'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::post('/create-seats', [ShowsController::class, 'createSeatsForExistingHalls'])
+            ->middleware(['auth:sanctum', 'is_admin']);
     });
 
     Route::prefix('performances')->group(function () {
+        Route::get('/genres', [PerformancesController::class, 'showGenres']);
         Route::get('/', [PerformancesController::class, 'index']);
         Route::get('/{performance}', [PerformancesController::class, 'show']);
-        
+        Route::get('/{performance}/shows', [PerformancesController::class, 'shows']);
+
         Route::middleware(['auth:sanctum', 'is_admin'])->group(function () {
             Route::post('/', [PerformancesController::class, 'store']);
             Route::put('/{performance}', [PerformancesController::class, 'update']);
@@ -64,7 +71,13 @@ Route::group(['middleware' => ['api']], function () {
         Route::get('/', [TicketsController::class, 'index']);
         Route::get('/{id}', [TicketsController::class, 'show']);
         Route::get('/user/{user_id}', [TicketsController::class, 'getUserTickets']);
-        Route::post('/', [TicketsController::class, 'store']);
+        
+        Route::get('/available-seats/{show_id}', [TicketsController::class, 'getAvailableSeats']);
+
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/purchase', [TicketsController::class, 'purchase']);
+            Route::post('/book', [TicketsController::class, 'bookTickets']);
+        });
     });
 
     Route::prefix('users')->group(function () {
@@ -105,6 +118,14 @@ Route::middleware('auth:sanctum')->group(function () {
         });
         Route::prefix('users')->group(function () {
             Route::get('/', [UsersController::class, 'index']);
+        });
+
+        Route::prefix('shows')->group(function () {
+            Route::post('/', [ShowsController::class, 'store']);
+            Route::put('/{show}', [ShowsController::class, 'update']);
+            Route::delete('/{show}', [ShowsController::class, 'destroy']);
+            Route::post('/hall', [ShowsController::class, 'storeHall']);
+            Route::post('/create-seats', [ShowsController::class, 'createSeatsForExistingHalls']);
         });
     });
 });

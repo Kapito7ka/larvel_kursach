@@ -2,56 +2,106 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Actor;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Redirect;
 
-class ActorsController extends ApiController
+class ActorsController extends Controller
 {
-    /**
-     * @OA\Get(
-     *     path="/actors",
-     *     summary="List of actors",
-     *     @OA\Response(
-     *         response=200,
-     *         description="OK"
-     *     )
-     * )
-     */
-    public function index(): JsonResponse {
-        $actors = Actor::all();
-        return response()->json($actors);
+    public function index()
+    {
+        return response()->json([
+            'actors' => Actor::paginate(),
+            'filters' => Request::all('search', 'trashed'),
+        ]);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/actors/{id}",
-     *     summary="Get a specific actor",
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="Actor ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="OK"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Actor not found"
-     *     )
-     * )
-     */
-    public function show($id): JsonResponse {
-        $actor = Actor::find($id);
-        
-        if (!$actor) {
-            return response()->json(['message' => 'Actor not found'], 404);
-        }
+    public function create()
+    {
+        return response()->json([
+            'actors' => Actor::all(),
+        ]);
+    }
 
-        return response()->json($actor);
+    public function store()
+    {
+        try {
+            $validated = Request::validate([
+                'first_name' => ['required', 'max:50'],
+                'last_name' => ['required', 'max:50'],
+                'phone_number' => ['required', 'max:50'],
+                'date_of_birth' => ['required', 'date'],
+                'passport' => ['required', 'string', 'max:50'],
+            ]);
+            $actor = Actor::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'phone_number' => $validated['phone_number'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'passport' => $validated['passport'],
+            ]);
+            return response()->json([
+                'message' => 'Актор створений',
+                'actor' => $actor
+            ], 201);
+        }
+        catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Помилка при створенні актора',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);    
+        }
+    }
+
+    public function edit(Actor $actor)
+    {
+        return response()->json([
+            'actor' => [
+                'id' => $actor->id,
+                'first_name' => $actor->first_name,
+                'last_name' => $actor->last_name,
+                'phone_number' => $actor->phone_number,
+                'date_of_birth' => $actor->date_of_birth,
+                'passport' => $actor->passport,
+            ],
+        ]);
+    }
+
+    public function update(Actor $actor)
+    {
+        $actor->update(
+            Request::validate([
+                'first_name' => ['required', 'max:50'],
+                'last_name' => ['required', 'max:50'],
+                'phone_number' => ['nullable', 'max:50'],
+                'date_of_birth' => ['nullable', 'date'],
+                'passport' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+            ])
+        );
+
+        return Redirect::back()->with('success', 'Actor updated.');
+    }
+
+    public function destroy(Actor $actor)
+    {
+        $actor->delete();
+
+        return response()->json([
+            'message' => 'Актор видалений',
+        ]);
+    }
+
+    public function restore(Actor $actor)
+    {
+        $actor->restore();
+
+        return response()->json([
+            'message' => 'Актор відновлений',
+        ]);
     }
 }

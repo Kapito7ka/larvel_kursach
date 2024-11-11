@@ -11,19 +11,38 @@ class Ticket extends Model
 
     protected $fillable = [
         'ticket_number',
-        'datetime',
+        'date',
+        'time',
         'show_id',
         'seat_id',
         'user_id',
         'price',
-        'discount_id',
+        'discount_id'
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'date' => 'date',
+        'time' => 'string',
+        'price' => 'decimal:2',
+    ];
+
+    public function show()
     {
-        return [
-            'datetime' => 'datetime',
-            'price' => 'decimal:2',
-        ];
+        return $this->belongsTo(Show::class);
+    }
+
+    public function seat()
+    {
+        return $this->belongsTo(Seat::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class);
     }
 }

@@ -16,19 +16,23 @@ class Show extends Model
         'hall_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'datetime' => 'datetime',
-            'price' => 'decimal:2',
-        ];
-    }
+    protected $casts = [ // Замість методу casts()
+        'datetime' => 'datetime',
+        'price' => 'decimal:2',
+    ];
+
     public function performance()
     {
         return $this->belongsTo(Performance::class, 'performance_id');
     }
+
     public function hall()
     {
         return $this->belongsTo(Hall::class, 'hall_id');
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
     }
 }

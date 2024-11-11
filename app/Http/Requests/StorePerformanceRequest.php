@@ -15,9 +15,10 @@ class StorePerformanceRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'duration' => 'required|integer|min:1',
+            'duration' => 'required|integer',
             'producer' => 'required|exists:producers,id',
-            'image' => 'required|string'
+            'image' => 'nullable|string',
+            'genre_id' => 'required|exists:genres,id'
         ];
     }
 
@@ -28,7 +29,9 @@ class StorePerformanceRequest extends FormRequest
             'duration.required' => 'Тривалість обов\'язкова',
             'producer.required' => 'Продюсер обов\'язковий',
             'producer.exists' => 'Вказаний продюсер не існує',
-            'image.required' => 'Зображення обов\'язкове'
+            'image.required' => 'Зображення обов\'язкове',
+            'genre_id.required' => 'Жанр обов\'язковий',
+            'genre_id.exists' => 'Вказаний жанр не існує'
         ];
     }
 }
