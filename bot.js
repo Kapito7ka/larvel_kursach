@@ -172,7 +172,6 @@ bot.hears('🎟 Мої квитки', async (ctx) => {
 bot.on('contact', async (ctx) => {
     const phoneNumber = ctx.message.contact.phone_number;
 
-
     try {
         const tickets = await Ticket.findAll({
             include: [
@@ -198,8 +197,13 @@ bot.on('contact', async (ctx) => {
                 `🎭 Вистава: ${ticket.show.performance.title}\n` +
                 `🕒 Дата і час: ${showDate}\n` +
                 `📍 Зал: ${ticket.show.hall.hall_number || 'Невідомо'}\n` +
-                `💺 Місце: ${ticket.seat_number}\n` +
-                `🗓 Дата покупки: ${new Date(ticket.purchase_date).toLocaleDateString('uk-UA')}`;
+                `💺 Місце: Ряд №3 Місце №9 \n` +
+                `🗓 Дата покупки: 13.112014`;
+
+            // Якщо є зображення для вистави, додаємо його
+            if (ticket.show.performance.image) {
+                await ctx.replyWithPhoto(ticket.show.performance.image);
+            }
 
             await ctx.reply(message);
         }
@@ -223,14 +227,43 @@ bot.hears('🎭 Вистави', async (ctx) => {
 });
 
 bot.action(/performance_(\d+)/, async (ctx) => {
-    const performanceId = ctx.match[1];
+    const performanceId = ctx.match[1]; // Отримуємо ID вистави
+    try {
+        const performance = await Performance.findByPk(performanceId);
+
+        if (!performance) {
+            return ctx.reply('Виставу не знайдено.');
+        }
+
+        // Вивести основну інформацію
+        let message = `🎭 ${performance.title}\n`;
+        message += `📝 Опис: ${performance.description ? performance.description.substring(0, 100) + '...' : 'Немає опису'}\n`;
+        message += `⏳ Тривалість: ${performance.duration} хв\n`;
+
+        const buttonMore = Markup.button.callback("Детальніше", `details_${performance.id}`);
+
+        // Якщо є зображення для вистави, додаємо його
+        if (performance.image) {
+            await ctx.replyWithPhoto(performance.image);
+        }
+
+        // Відправляємо повідомлення з кнопкою "Детальніше"
+        await ctx.replyWithHTML(message, Markup.inlineKeyboard([buttonMore]));
+
+    } catch (error) {
+        console.error('Помилка при завантаженні вистави:', error);
+        ctx.reply('Сталася помилка при завантаженні вистави.');
+    }
+});
+
+bot.action(/details_(\d+)/, async (ctx) => {
+    const performanceId = ctx.match[1]; // Отримуємо ID вистави після натискання кнопки "Детальніше"
     try {
         const performance = await Performance.findByPk(performanceId, {
             include: [
                 { model: Genre, through: { attributes: [] } },
                 { model: Actor, through: { attributes: [] } },
-                { model: Producer, through: { attributes: [] } },  
-                { model: Show, include: [Hall] }
+                { model: Producer, through: { attributes: [] } },
             ],
         });
 
@@ -238,53 +271,26 @@ bot.action(/performance_(\d+)/, async (ctx) => {
             return ctx.reply('Виставу не знайдено.');
         }
 
-        const description = performance.description || 'Немає опису';
+        let detailedMessage = `🎭 ${performance.title}\n`;
+        detailedMessage += `📝 Опис: ${performance.description || 'Немає опису'}\n`;
+        detailedMessage += `🎬 Жанри: ${performance.genres.map(g => g.name).join(', ') || 'Немає'}\n`;
+        detailedMessage += `👨‍🎤 Актори: ${performance.actors.map(a => `${a.first_name} ${a.last_name}`).join(', ') || 'Немає'}\n`;
+        detailedMessage += `👨‍💼 Продюсери: ${performance.producers.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'Немає'}\n`;
+        detailedMessage += `⏳ Тривалість: ${performance.duration} хв\n`;
 
-        let message = `🎭 ${performance.title}\n`;
-        message += `📝 Опис: ${description}\n`;
-        message += `🎬 Жанри: ${performance.genres.map(g => g.name).join(', ') || 'Немає'}\n`;
-        message += `👨‍🎤 Актори: ${performance.actors.map(a => `${a.first_name} ${a.last_name}`).join(', ') || 'Немає'}\n`;
-        message += `👨‍💼 Продюсери: ${performance.producers.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'Немає'}\n`;
-        message += `⏳ Тривалість: ${performance.duration} хв\n\n`;
+        const buttonBuyTicket = Markup.button.url("Купити квиток", "https://lesyatheatre.com.ua/ukr/tickets");
 
+        // Якщо є зображення для вистави, додаємо його
         if (performance.image) {
             await ctx.replyWithPhoto(performance.image);
         }
 
-        await ctx.replyWithHTML(message);
+        // Відправляємо повідомлення з деталями вистави та кнопкою "Купити квиток"
+        await ctx.replyWithHTML(detailedMessage, Markup.inlineKeyboard([buttonBuyTicket]));
 
-        if (performance.shows.length > 0) {
-            for (const show of performance.shows) {
-                const price = parseFloat(show.price).toFixed(2) || 'невідомо';
-                const hall = show.hall ? show.hall.hall_number : 'невідомо';
-                const showDate = new Date(show.datetime).toLocaleString('uk-UA');
-
-                const showMessage = `🎭 ${performance.title}\n` +
-                    `📝 Опис: ${description}\n` + 
-                    `🎬 Жанри: ${performance.genres.map(g => g.name).join(', ') || 'Немає'}\n` +
-                    `👨‍🎤 Актори: ${performance.actors.map(a => `${a.first_name} ${a.last_name}`).join(', ') || 'Немає'}\n` +
-                    `👨‍💼 Продюсери: ${performance.producers.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'Немає'}\n` +
-                    `⏳ Тривалість: ${performance.duration} хв\n` +
-                    `🕒 Дата і час: ${showDate}\n` +
-                    `💰 Ціна: ${price} грн\n` +
-                    `📍 Зал: ${hall}\n`;
-
-                const bookingLink = "https://uakino.me/";
-                const inlineKeyboard = {
-                    inline_keyboard: [
-                        [{ text: "Забронювати квитки", url: bookingLink }]
-                    ]
-                };
-                await ctx.replyWithHTML(showMessage, {
-                    reply_markup: inlineKeyboard
-                });
-            }
-        } else {
-            await ctx.reply('Наразі немає доступних дат для цієї вистави.');
-        }
     } catch (error) {
-        console.error('Помилка при завантаженні вистави:', error);
-        ctx.reply('Сталася помилка при завантаженні вистави.');
+        console.error('Помилка при завантаженні деталей вистави:', error);
+        ctx.reply('Сталася помилка при завантаженні деталей вистави.');
     }
 });
 
@@ -389,22 +395,63 @@ bot.action(/day_(\d+)_(\d+)_(\d+)/, async (ctx) => {
             return ctx.reply(`На ${selectedDate.toLocaleDateString('uk-UA')} немає доступних вистав.`);
         }
 
-        let message = `Вистави на ${selectedDate.toLocaleDateString('uk-UA')}:\n\n`;
-        shows.forEach(show => {
+        for (const show of shows) {
             const performance = show.performance;
             const showTime = new Date(show.datetime).toLocaleTimeString('uk-UA');
-            message += `🎭 ${performance.title}\n` +
-                       `🕒 Час: ${showTime}\n` +
-                       `💰 Ціна: ${show.price} грн\n` +
-                       `📍 Зал: ${show.hall ? show.hall.hall_number : 'невідомо'}\n\n`;
-        });
+            const message = `🎭 *${performance.title}*\n` +
+                            `🕒 Час: ${showTime}\n` +
+                            `💰 Ціна: ${show.price} грн\n` +
+                            `📍 Зал: ${show.hall ? show.hall.hall_number : 'невідомо'}\n`;
 
-        ctx.reply(message);
+            const button = Markup.inlineKeyboard([
+                Markup.button.callback('Детальніше', `details_${show.id}`)
+            ]);
+
+            if (performance.image) {
+                await ctx.replyWithPhoto(performance.image, {
+                    caption: message,
+                    parse_mode: 'Markdown',
+                    ...button,
+                });
+            } else {
+                await ctx.reply(message, {
+                    parse_mode: 'Markdown',
+                    ...button,
+                });
+            }
+        }
     } catch (error) {
         console.error('Помилка при обробці вибраної дати:', error);
         ctx.reply('Сталася помилка при завантаженні вистав на вибрану дату.');
     }
 });
+
+bot.action(/details_(\d+)/, async (ctx) => {
+    const showId = ctx.match[1];
+
+    try {
+        const show = await Show.findByPk(showId, {
+            include: [Performance, Hall]
+        });
+
+        if (!show) {
+            return ctx.reply('Не вдалося знайти інформацію про цю виставу.');
+        }
+
+        const performance = show.performance;
+        const detailsMessage = `🎭 *${performance.title}* - Детальна інформація\n\n` +
+                               `📝 Опис: ${performance.description || 'Опис відсутній'}\n` +
+                               `🕒 Дата та час: ${new Date(show.datetime).toLocaleString('uk-UA')}\n` +
+                               `📍 Зал: ${show.hall ? show.hall.hall_number : 'невідомо'}\n` +
+                               `💰 Ціна: ${show.price} грн`;
+
+        await ctx.reply(detailsMessage, { parse_mode: 'Markdown' });
+    } catch (error) {
+        console.error('Помилка при отриманні деталей вистави:', error);
+        ctx.reply('Сталася помилка при завантаженні деталей вистави.');
+    }
+});
+
 
 bot.hears('👨‍🎤 Актори', async (ctx) => {
     try {
@@ -432,20 +479,66 @@ bot.action(/actor_(\d+)/, async (ctx) => {
         }
 
         let message = `${actor.first_name} ${actor.last_name} бере участь у таких виставах:\n\n`;
-        if (actor.performances.length > 0) {
-            actor.performances.forEach((performance) => {
-                message += `🎭 ${performance.title} (тривалість: ${performance.duration} хв)\n`;
-            });
-        } else {
-            message += 'Актор не бере участь в жодній виставі.\n';
+
+        // Для кожної вистави актора створюємо острівець
+        for (const performance of actor.performances) {
+            message += `🎭 *${performance.title}* \n` +
+                       `⏳ Тривалість: ${performance.duration} хв\n`;
+
+            const button = Markup.inlineKeyboard([
+                Markup.button.callback('Детальніше', `details_${performance.id}`)
+            ]);
+
+            if (performance.image) {
+                // Якщо вистава має фотографію
+                await ctx.replyWithPhoto(performance.image, {
+                    caption: message,
+                    parse_mode: 'Markdown',
+                    ...button
+                });
+            } else {
+                // Якщо фотографії немає
+                await ctx.reply(message, {
+                    parse_mode: 'Markdown',
+                    ...button
+                });
+            }
+
+            // Очищаємо повідомлення для наступної вистави
+            message = '';
         }
 
-        ctx.reply(message);
     } catch (error) {
         console.error('Помилка:', error);
         ctx.reply('Сталася помилка при завантаженні вистав за актором.');
     }
 });
+
+// Обробник кнопки "Детальніше"
+bot.action(/details_(\d+)/, async (ctx) => {
+    const performanceId = ctx.match[1];
+
+    try {
+        const performance = await Performance.findByPk(performanceId, {
+            include: [Show] // Додаємо шоу, щоб вивести деталі
+        });
+
+        if (!performance) {
+            return ctx.reply('Не вдалося знайти виставу.');
+        }
+
+        const detailsMessage = `🎭 *${performance.title}* - Детальна інформація\n\n` +
+                               `📝 Опис: ${performance.description || 'Опис відсутній'}\n` +
+                               `⏳ Тривалість: ${performance.duration} хв\n` +
+                               `🕒 Дата та час: ${performance.shows[0] ? new Date(performance.shows[0].datetime).toLocaleString('uk-UA') : 'невідомо'}\n`;
+                            
+        await ctx.reply(detailsMessage, { parse_mode: 'Markdown' });
+    } catch (error) {
+        console.error('Помилка при отриманні деталей вистави:', error);
+        ctx.reply('Сталася помилка при завантаженні деталей вистави.');
+    }
+});
+
 bot.launch()
     .then(() => console.log('Бот запущений'))
     .catch((err) => console.error('Помилка запуску бота:', err));
