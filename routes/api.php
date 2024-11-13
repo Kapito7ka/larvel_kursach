@@ -83,6 +83,11 @@ Route::group(['middleware' => ['api']], function () {
             Route::post('/{id}/cancel', [TicketsController::class, 'cancelBooking']);
             Route::get('/{id}', [TicketsController::class, 'show'])->where('id', '[0-9]+');
         });
+
+        Route::middleware(['auth:sanctum', 'is_admin'])->group(function () {
+            Route::put('/{id}', [TicketsController::class, 'updateTicket'])->where('id', '[0-9]+');
+            Route::delete('/{id}', [TicketsController::class, 'destroy'])->where('id', '[0-9]+');
+        });
     });
 
     Route::prefix('users')->group(function () {

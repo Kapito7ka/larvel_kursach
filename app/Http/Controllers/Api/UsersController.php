@@ -44,7 +44,7 @@ class UsersController extends Controller
             $updateData = array_filter([
                 'name' => $validated['name'] ?? null,
                 'email' => $validated['email'] ?? null,
-                'phone_numbers' => $validated['phone_numbers'] ?? null, // змінено на phone_numbers
+                'phone_numbers' => $validated['phone_numbers'] ?? null, 
                 'age' => $validated['age'] ?? null,
             ], function($value) {
                 return $value !== null;

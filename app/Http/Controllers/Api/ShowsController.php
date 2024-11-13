@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Redirect;
 use App\Http\Requests\StoreShowRequest;
 use App\Http\Requests\StoreHallRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ShowsController extends Controller
 {
@@ -208,25 +210,141 @@ class ShowsController extends Controller
         ]);
     }
 
-    public function update(Show $show)
+    public function update(Show $show, StoreShowRequest $request)
     {
-        $show->update(
-            Request::validate([
-                'performance_id' => ['required', 'exists:performances,id'],
-                'datetime' => ['required', 'date'],
-                'price' => ['required', 'numeric', 'min:0'],
-                'hall_id' => ['required', 'exists:halls,id'],
-            ])
-        );
+        try {
+            \DB::beginTransaction();
+            
+            $validated = $request->validated();
+            
+            // Перевіряємо чи змінився зал
+            $hallChanged = $show->hall_id != $validated['hall_id'];
+            
+            if ($hallChanged) {
+                // Перевіряємо наявність місць в новому залі
+                $seatsCount = \DB::table('seats')
+                    ->where('hall_id', $validated['hall_id'])
+                    ->count();
 
-        return Redirect::back()->with('success', 'Show updated.');
+                if ($seatsCount === 0) {
+                    return response()->json([
+                        'message' => 'Для нового залу не створені місця',
+                        'error' => 'No seats available'
+                    ], 400);
+                }
+
+                // Видаляємо старі квитки
+                \DB::table('tickets')->where('show_id', $show->id)->delete();
+
+                // Створюємо нові квитки для нового залу
+                $seats = \DB::table('seats')
+                    ->where('hall_id', $validated['hall_id'])
+                    ->orderBy('row')
+                    ->orderBy('seat_number')
+                    ->get();
+
+                $tickets = [];
+                foreach ($seats as $seat) {
+                    $tickets[] = [
+                        'ticket_number' => uniqid('TKT') . '-R' . $seat->row . 'S' . str_pad($seat->seat_number, 2, '0', STR_PAD_LEFT),
+                        'date' => date('Y-m-d', strtotime($validated['datetime'])),
+                        'time' => date('H:i:s', strtotime($validated['datetime'])),
+                        'show_id' => $show->id,
+                        'seat_id' => $seat->id,
+                        'price' => $validated['price'],
+                        'user_id' => null,
+                        'discount_id' => null,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }
+
+                \DB::table('tickets')->insert($tickets);
+            } else {
+                // Оновлюємо ціну та час для існуючих квитків
+                \DB::table('tickets')
+                    ->where('show_id', $show->id)
+                    ->whereNull('user_id')
+                    ->update([
+                        'date' => date('Y-m-d', strtotime($validated['datetime'])),
+                        'time' => date('H:i:s', strtotime($validated['datetime'])),
+                        'price' => $validated['price']
+                    ]);
+            }
+
+            // Оновлюємо виставу
+            $show->update([
+                'performance_id' => $validated['performance_id'],
+                'datetime' => $validated['datetime'],
+                'price' => $validated['price'],
+                'hall_id' => $validated['hall_id']
+            ]);
+
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Виставу успішно оновлено',
+                'show' => $show
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            Log::error('Помилка при оновленні вистави:', [
+                'show_id' => $show->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Помилка при оновленні вистави',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);
+        }
     }
 
     public function destroy(Show $show)
     {
-        $show->delete();
+        try {
+            \DB::beginTransaction();
 
-        return Redirect::back()->with('success', 'Show deleted.');
+            // Перевіряємо чи є заброньовані квитки
+            $bookedTicketsCount = \DB::table('tickets')
+                ->where('show_id', $show->id)
+                ->whereNotNull('user_id')
+                ->count();
+
+            if ($bookedTicketsCount > 0) {
+                return response()->json([
+                    'message' => 'Неможливо видалити виставу з забронованими квитками',
+                    'booked_tickets_count' => $bookedTicketsCount
+                ], 422);
+            }
+
+            // Видаляємо всі квитки
+            \DB::table('tickets')->where('show_id', $show->id)->delete();
+
+            // Видаляємо виставу
+            $show->delete();
+
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Виставу успішно видалено'
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            Log::error('Помилка при видаленні вистави:', [
+                'show_id' => $show->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Помилка при видаленні вистави',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);
+        }
     }
 
     public function restore(Show $show)

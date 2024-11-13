@@ -157,4 +157,97 @@ class PerformancesController extends ApiController
             ], 500);
         }
     }
+
+    public function update(StorePerformanceRequest $request, Performance $performance)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $validated = $request->validated();
+            
+            $updateData = [
+                'title' => $validated['title'],
+                'duration' => $validated['duration'],
+                'producer' => $validated['producer']
+            ];
+            
+            // Оновлення зображення, якщо воно надано
+            if (isset($validated['image'])) {
+                // Видалення старого зображення
+                if ($performance->image) {
+                    Storage::delete($performance->image);
+                }
+                $updateData['image'] = $validated['image'];
+            }
+            
+            $performance->update($updateData);
+            
+            // Оновлення жанрів
+            if (isset($validated['genre_id'])) {
+                $performance->genres()->sync($validated['genre_id']);
+            }
+            
+            // Оновлення акторів
+            if (isset($validated['actors'])) {
+                $performance->actors()->sync($validated['actors']);
+            }
+            
+            DB::commit();
+            
+            $performance->load(['producer', 'actors', 'genres']);
+            
+            return response()->json([
+                'message' => 'Виставу успішно оновлено',
+                'performance' => $performance
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Помилка оновлення вистави', [
+                'error' => $e->getMessage(),
+                'performance_id' => $performance->id,
+                'data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'message' => 'Помилка при оновленні вистави',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);
+        }
+    }
+
+    public function destroy(Performance $performance)
+    {
+        try {
+            DB::beginTransaction();
+            
+            // Видалення зображення, якщо воно існує
+            if ($performance->image) {
+                Storage::delete($performance->image);
+            }
+            
+            // Видалення пов'язаних даних
+            $performance->genres()->detach();
+            $performance->actors()->detach();
+            $performance->delete();
+            
+            DB::commit();
+            
+            return response()->json([
+                'message' => 'Виставу успішно видалено'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Помилка видалення вистави', [
+                'error' => $e->getMessage(),
+                'performance_id' => $performance->id
+            ]);
+            
+            return response()->json([
+                'message' => 'Помилка при видаленні вистави',
+                'error' => config('app.debug') ? $e->getMessage() : 'Server Error'
+            ], 500);
+        }
+    }
 }
