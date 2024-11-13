@@ -32,4 +32,9 @@ class Actor extends Model
     {
         return $this->first_name . ' ' . $this->last_name;
     }
+
+    public function performances()
+    {
+        return $this->belongsToMany(Performance::class, 'performance_actor', 'actor_id', 'performance_id');
+    }
 }

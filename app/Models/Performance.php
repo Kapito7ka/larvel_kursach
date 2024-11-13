@@ -12,13 +12,16 @@ class Performance extends Model
         'title',
         'duration',
         'producer',
-        'image'
+        'image',
+        'genre_id'
     ];
 
     protected $casts = [
         'duration' => 'integer',
         'producer' => 'integer'
     ];
+
+    protected $with = ['actors'];
 
     public function producer()
     {
@@ -28,6 +31,11 @@ class Performance extends Model
     public function genres()
     {
         return $this->belongsToMany(Genre::class, 'performance_genres');
+    }
+
+    public function actors()
+    {
+        return $this->belongsToMany(Actor::class, 'performance_actor', 'performance_id', 'actor_id');
     }
 
     public function shows()

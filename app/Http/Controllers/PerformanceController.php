@@ -6,6 +6,8 @@ use App\Models\Performance;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
+use App\Http\Requests\StorePerformanceRequest;
+use Illuminate\Support\Facades\DB;
 
 class PerformanceController extends Controller
 {
@@ -22,22 +24,45 @@ class PerformanceController extends Controller
         return Inertia::render('Performances/Create');
     }
 
-    public function store()
+    public function store(StorePerformanceRequest $request)
     {
-        Performance::create(
-            Request::validate([
-                'title' => [
-                    'required',
-                    'max:255'
-                ],
-                'duration' => [
-                    'required',
-                    'integer',
-                    'min:1'
-                ],
-            ])
-        );
-        return Redirect::route('performances')->with('success', 'Performance created.');
+        \Log::info('Отримані дані:', $request->validated());
+        
+        try {
+            DB::beginTransaction();
+            
+            $performance = Performance::create($request->validated());
+            
+            \Log::info('Створена вистава:', ['id' => $performance->id]);
+            
+            if ($request->has('actors')) {
+                \Log::info('Синхронізація акторів:', ['actors' => $request->actors]);
+                $performance->actors()->sync($request->actors);
+            }
+            
+            DB::commit();
+            
+            // Завантажуємо зв'язані дані перед поверненням
+            $performance->load('actors');
+            
+            return response()->json([
+                'success' => true,
+                'performance' => $performance,
+                'message' => 'Виставу успішно створено'
+            ], 201);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Помилка при створенні вистави:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Помилка при створенні вистави: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function edit(Performance $performance)

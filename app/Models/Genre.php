@@ -15,4 +15,24 @@ class Genre extends Model
         'id',
         'name'
     ];
+
+    public function scopeOrderByNameAsc($query)
+    {
+        return $query->orderBy('name', 'asc');
+    }
+
+    public function scopeOrderByNameDesc($query)
+    {
+        return $query->orderBy('name', 'desc');
+    }
+
+    public function scopeOrderByIdAsc($query)
+    {
+        return $query->orderBy('id', 'asc');
+    }
+
+    public function scopeOrderByIdDesc($query)
+    {
+        return $query->orderBy('id', 'desc');
+    }
 }

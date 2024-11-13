@@ -56,11 +56,14 @@ RUN apt-get update \
 
 RUN setcap "cap_net_bind_service=+ep" /usr/bin/php8.3
 
+RUN apt-get update && apt-get install -y supervisor
+
 RUN groupadd --force -g ${WWWGROUP} sail
 RUN useradd -ms /bin/bash --no-user-group -g ${WWWGROUP} -u ${WWWUSER} sail
 
 COPY start-container /usr/local/bin/start-container
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY supervisord.websockets.conf /etc/supervisor/conf.d/websockets.conf
 COPY php.ini /etc/php/8.3/cli/conf.d/99-sail.ini
 RUN sed -i 's/\r$//' /usr/local/bin/start-container
 RUN chmod +x /usr/local/bin/start-container

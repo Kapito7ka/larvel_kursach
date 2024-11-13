@@ -9,18 +9,43 @@ use App\Models\Performance;
 use App\Models\Genre;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB; 
 use App\Models\Show;
 
 class PerformancesController extends ApiController
 {
     public function index()
     {
-        $performances = Performance::all();
+        $query = Performance::query();
+
+        if (request()->has('sort_price')) {
+            $direction = request('sort_price') === 'desc' ? 'desc' : 'asc';
+            $query->orderBy('price', $direction);
+        }
+
+        if (request()->has('sort_date')) {
+            $direction = request('sort_date') === 'desc' ? 'desc' : 'asc';
+            $query->orderBy('created_at', $direction);
+        }
+
+        if (request()->has('genre_id')) {
+            $query->whereHas('genres', function($q) {
+                $q->where('genres.id', request('genre_id'));
+            });
+        }
+
+        if (request()->has('search')) {
+            $searchTerm = request('search');
+            $query->where('title', 'LIKE', "%{$searchTerm}%");
+        }
+
+        $performances = $query->with(['genres', 'producer', 'actors'])->get();
         return response()->json($performances);
     }
 
     public function show(Performance $performance)
     {
+        $performance->load(['producer', 'actors', 'genres']);
         return response()->json($performance);
     }
 
@@ -31,16 +56,26 @@ class PerformancesController extends ApiController
             
             $validated = $request->validated();
             
+            DB::beginTransaction(); 
+            
             $performance = Performance::create([
                 'title' => $validated['title'],
                 'duration' => $validated['duration'],
-                'producer_id' => $validated['producer'],
+                'producer' => $validated['producer'], 
                 'image' => $validated['image'] ?? null
             ]);
 
-            if (isset($validated['genre_id'])) {
+            if (isset($validated['genre_id'])) { 
                 $performance->genres()->attach($validated['genre_id']);
             }
+
+            if (isset($validated['actors'])) {
+                $performance->actors()->attach($validated['actors']);
+            }
+
+            DB::commit();
+
+            $performance->load(['producer', 'actors', 'genres']);
 
             return response()->json([
                 'message' => 'Виставу успішно створено',
@@ -48,6 +83,7 @@ class PerformancesController extends ApiController
             ], 201);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             \Log::error('Помилка створення вистави', [
                 'error' => $e->getMessage(),
                 'data' => $request->all()

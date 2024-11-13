@@ -19,10 +19,12 @@ Route::group(['middleware' => ['api']], function () {
     Route::get('/ping', function () {
         return response()->json(['message' => 'pong']);
     });
-
     Route::get('/user', function (Request $request) {
-        return $request->user();
+            return $request->user();
     })->middleware('auth:sanctum');
+    Route::put('/', [UsersController::class, 'update'])->middleware('auth:sanctum');
+    Route::delete('/', [UsersController::class, 'destroy'])->middleware('auth:sanctum');
+    
 
     Route::prefix('actors')->group(function () {
         Route::get('/', [ActorsController::class, 'index']);
@@ -75,13 +77,18 @@ Route::group(['middleware' => ['api']], function () {
         Route::get('/available-seats/{show_id}', [TicketsController::class, 'getAvailableSeats']);
 
         Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/user', [TicketsController::class, 'getCurrentUserTickets']);
             Route::post('/purchase', [TicketsController::class, 'purchase']);
             Route::post('/book', [TicketsController::class, 'bookTickets']);
+            Route::post('/{id}/cancel', [TicketsController::class, 'cancelBooking']);
+            Route::get('/{id}', [TicketsController::class, 'show'])->where('id', '[0-9]+');
         });
     });
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UsersController::class, 'index'])->middleware(['auth:sanctum', 'is_admin']);
+        Route::get('/{id}', [UsersController::class, 'edit'])->middleware('auth:sanctum');
+        Route::put('/{id}', [UsersController::class, 'update'])->middleware('auth:sanctum');
     });
 
 });
