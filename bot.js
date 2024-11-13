@@ -1,15 +1,14 @@
 const { Telegraf, Markup } = require('telegraf');
 const { Sequelize, DataTypes } = require('sequelize');
 
-// Підключення до бази даних
 const sequelize = new Sequelize('bddvvx5uepfk7vo0almc', 'ual3odet1pi3ftpn', 'yeaGgGxFe0dCTwkhmCdZ', {
     host: 'bddvvx5uepfk7vo0almc-mysql.services.clever-cloud.com',
     dialect: 'mysql',
     port: 3306,
-    logging: false, // Вимкнути SQL-логи в консолі
+    logging: false, 
 });
 
-// Перевірка підключення
+
 sequelize.authenticate()
     .then(() => console.log('Підключено до бази даних'))
     .catch((err) => console.error('Помилка підключення до БД:', err));
@@ -18,13 +17,21 @@ sequelize.authenticate()
 const Performance = sequelize.define('performance', {
     id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true },
     title: DataTypes.STRING,
+    description: DataTypes.TEXT, 
     duration: DataTypes.INTEGER,
     image: DataTypes.STRING,
 }, {
     timestamps: false,
 });
 
-// User model
+const Producer = sequelize.define('producer', {
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true },
+    first_name: DataTypes.STRING,
+    last_name: DataTypes.STRING,
+}, {
+    timestamps: false,
+});
+
 const User = sequelize.define('User', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     name: { type: DataTypes.STRING, allowNull: false },
@@ -35,14 +42,12 @@ const User = sequelize.define('User', {
     created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
     age: { type: DataTypes.INTEGER, allowNull: true },
-    phone_numbers: { type: DataTypes.STRING, allowNull: false }, // Поле для номерів телефонів
+    phone_numbers: { type: DataTypes.STRING, allowNull: false }, 
     status: { type: DataTypes.STRING, allowNull: true }
 }, {
-    tableName: 'users', // Замість 'Users' вказано точну назву таблиці в БД
-    timestamps: false    // Якщо ви не використовуєте автоматичні поля created_at і updated_at
+    tableName: 'users', 
+    timestamps: false   
 });
-
-
 
 const Ticket = sequelize.define('Ticket', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -57,10 +62,9 @@ const Ticket = sequelize.define('Ticket', {
     created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
 }, {
-    tableName: 'tickets', // Точна назва таблиці в базі даних
-    timestamps: false,    // Якщо база даних використовує власні поля created_at і updated_at
+    tableName: 'tickets', 
+    timestamps: false,   
 });
-
 
 const Hall = sequelize.define('hall', {
     id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true },
@@ -117,14 +121,20 @@ const PerformanceActor = sequelize.define('performance_actor', {
     actor_id: { type: DataTypes.BIGINT.UNSIGNED, references: { model: Actor, key: 'id' } }
 }, {
     timestamps: false,
-    tableName: 'performance_actor' // Вказуємо правильне ім'я таблиці
+    tableName: 'performance_actor' 
+});
+const PerformanceProducer = sequelize.define('performance_producer', {
+    performance_id: { type: DataTypes.BIGINT.UNSIGNED, references: { model: Performance, key: 'id' } },
+    producer_id: { type: DataTypes.BIGINT.UNSIGNED, references: { model: Producer, key: 'id' } }
+}, {
+    timestamps: false,
 });
 
-// User Model
+Performance.belongsToMany(Producer, { through: PerformanceProducer, foreignKey: 'performance_id' });
+Producer.belongsToMany(Performance, { through: PerformanceProducer, foreignKey: 'producer_id' });
+
 User.hasMany(Ticket, { foreignKey: 'user_id' });
 Ticket.belongsTo(User, { foreignKey: 'user_id' });
-
-// Встановлення асоціацій між моделями
 
 Performance.belongsToMany(Genre, { through: PerformanceGenre, foreignKey: 'performance_id' });
 Genre.belongsToMany(Performance, { through: PerformanceGenre, foreignKey: 'genre_id' });
@@ -141,8 +151,7 @@ Show.belongsTo(Hall, { foreignKey: 'hall_id' });
 Ticket.belongsTo(Show, { foreignKey: 'show_id' });
 Show.hasMany(Ticket, { foreignKey: 'show_id' });
 
-// Ініціалізація бота
-const bot = new Telegraf('7355998053:AAFzF4962NSnBzkdLOkcAV1gB0nYq0u6qfk'); // Замініть на ваш токен
+const bot = new Telegraf('7355998053:AAFzF4962NSnBzkdLOkcAV1gB0nYq0u6qfk'); 
 
 bot.command('start', async (ctx) => {
     const menu = Markup.keyboard([
@@ -200,8 +209,6 @@ bot.on('contact', async (ctx) => {
     }
 });
 
-
-// Команда для перегляду всіх вистав
 bot.hears('🎭 Вистави', async (ctx) => {
     try {
         const performances = await Performance.findAll();
@@ -215,9 +222,6 @@ bot.hears('🎭 Вистави', async (ctx) => {
     }
 });
 
-
-
-// Обробка натискання на виставу
 bot.action(/performance_(\d+)/, async (ctx) => {
     const performanceId = ctx.match[1];
     try {
@@ -225,6 +229,7 @@ bot.action(/performance_(\d+)/, async (ctx) => {
             include: [
                 { model: Genre, through: { attributes: [] } },
                 { model: Actor, through: { attributes: [] } },
+                { model: Producer, through: { attributes: [] } },  
                 { model: Show, include: [Hall] }
             ],
         });
@@ -233,68 +238,61 @@ bot.action(/performance_(\d+)/, async (ctx) => {
             return ctx.reply('Виставу не знайдено.');
         }
 
+        const description = performance.description || 'Немає опису';
+
         let message = `🎭 ${performance.title}\n`;
-        message += `📝 Опис: ${performance.description || 'Немає опису'}\n`;
+        message += `📝 Опис: ${description}\n`;
         message += `🎬 Жанри: ${performance.genres.map(g => g.name).join(', ') || 'Немає'}\n`;
         message += `👨‍🎤 Актори: ${performance.actors.map(a => `${a.first_name} ${a.last_name}`).join(', ') || 'Немає'}\n`;
+        message += `👨‍💼 Продюсери: ${performance.producers.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'Немає'}\n`;
         message += `⏳ Тривалість: ${performance.duration} хв\n\n`;
+
+        if (performance.image) {
+            await ctx.replyWithPhoto(performance.image);
+        }
 
         await ctx.replyWithHTML(message);
 
         if (performance.shows.length > 0) {
             for (const show of performance.shows) {
-                console.log(`Show ID: ${show.id}, Price: ${show.price}, Type: ${typeof show.price}, Hall: ${show.hall ? show.hall.hall_number : 'невідомо'}`);
-            
-                const price = typeof show.price === 'number' 
-                    ? show.price.toFixed(2) 
-                    : (parseFloat(show.price) ? parseFloat(show.price).toFixed(2) : 'невідомо');
-                
+                const price = parseFloat(show.price).toFixed(2) || 'невідомо';
                 const hall = show.hall ? show.hall.hall_number : 'невідомо';
-            
                 const showDate = new Date(show.datetime).toLocaleString('uk-UA');
-                const showMessage = `🎭 ${performance.title}\n` +
-                                    `📝 Опис: ${performance.description || 'Немає опису'}\n` +
-                                    `🎬 Жанри: ${performance.genres.map(g => g.name).join(', ') || 'Немає'}\n` +
-                                    `👨‍🎤 Актори: ${performance.actors.map(a => `${a.first_name} ${a.last_name}`).join(', ') || 'Немає'}\n` +
-                                    `⏳ Тривалість: ${performance.duration} хв\n` +
-                                    `🕒 Дата і час: ${showDate}\n` +
-                                    `💰 Ціна: ${price} грн\n` +
-                                    `📍 Зал: ${hall}\n`;
 
-                // Використовуємо ваше посилання для бронювання
+                const showMessage = `🎭 ${performance.title}\n` +
+                    `📝 Опис: ${description}\n` + 
+                    `🎬 Жанри: ${performance.genres.map(g => g.name).join(', ') || 'Немає'}\n` +
+                    `👨‍🎤 Актори: ${performance.actors.map(a => `${a.first_name} ${a.last_name}`).join(', ') || 'Немає'}\n` +
+                    `👨‍💼 Продюсери: ${performance.producers.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'Немає'}\n` +
+                    `⏳ Тривалість: ${performance.duration} хв\n` +
+                    `🕒 Дата і час: ${showDate}\n` +
+                    `💰 Ціна: ${price} грн\n` +
+                    `📍 Зал: ${hall}\n`;
+
                 const bookingLink = "https://uakino.me/";
                 const inlineKeyboard = {
                     inline_keyboard: [
                         [{ text: "Забронювати квитки", url: bookingLink }]
                     ]
                 };
-
-                // Відправка повідомлення з кнопкою
                 await ctx.replyWithHTML(showMessage, {
                     reply_markup: inlineKeyboard
                 });
             }
-            
         } else {
             await ctx.reply('Наразі немає доступних дат для цієї вистави.');
         }
-        
     } catch (error) {
         console.error('Помилка при завантаженні вистави:', error);
         ctx.reply('Сталася помилка при завантаженні вистави.');
     }
 });
 
-
-
-
-
-// Команда для фільтрації вистав за жанром
 bot.hears('🎬 Жанри', async (ctx) => {
     try {
         const genres = await Genre.findAll();
         const buttons = genres.map((g) => Markup.button.callback(g.name, `genre_${g.id}`));
-        console.log(genres);  // Логування жанрів
+        console.log(genres);  
         ctx.reply('Оберіть жанр:', Markup.inlineKeyboard(buttons, { columns: 2 }));
     } catch (error) {
         console.error('Помилка:', error);
@@ -302,7 +300,6 @@ bot.hears('🎬 Жанри', async (ctx) => {
     }
 });
 
-// Обробка вибору жанру
 bot.action(/genre_(\d+)/, async (ctx) => {
     const genreId = ctx.match[1];
     try {
@@ -311,7 +308,6 @@ bot.action(/genre_(\d+)/, async (ctx) => {
             return ctx.reply('Жанр не знайдений.');
         }
 
-        // Отримуємо вистави, що належать до вибраного жанру
         const performances = await Performance.findAll({
             include: {
                 model: Genre,
@@ -325,7 +321,6 @@ bot.action(/genre_(\d+)/, async (ctx) => {
                 return Markup.button.callback(p.title, `performance_${p.id}`);
             });
 
-            // Виводимо кнопки для кожної вистави
             ctx.reply('За цим жаром є такі вистави:', Markup.inlineKeyboard(buttons, { columns: 2 }));
         } else {
             ctx.reply(`Для жанру "${genre.name}" не знайдено жодної вистави.`);
@@ -336,7 +331,6 @@ bot.action(/genre_(\d+)/, async (ctx) => {
     }
 });
 
-// Команда для перегляду вистав по даті
 bot.hears('📅 Перегляд по даті', async (ctx) => {
     try {
         const months = [
@@ -356,13 +350,12 @@ bot.hears('📅 Перегляд по даті', async (ctx) => {
     }
 });
 
-// Обробка вибору місяця
 bot.action(/month_2024_(\d+)/, async (ctx) => {
-    const month = ctx.match[1]; // Отримуємо номер місяця
+    const month = ctx.match[1]; 
     const year = 2024;
 
     try {
-        const daysInMonth = new Date(year, month, 0).getDate(); // Кількість днів у вибраному місяці
+        const daysInMonth = new Date(year, month, 0).getDate(); 
 
         const dayButtons = Array.from({ length: daysInMonth }, (_, i) =>
             Markup.button.callback(`${i + 1}`, `day_${year}_${month}_${i + 1}`)
@@ -377,7 +370,6 @@ bot.action(/month_2024_(\d+)/, async (ctx) => {
     }
 });
 
-// Обробка вибору дня
 bot.action(/day_(\d+)_(\d+)_(\d+)/, async (ctx) => {
     const [year, month, day] = ctx.match.slice(1, 4);
 
@@ -414,10 +406,6 @@ bot.action(/day_(\d+)_(\d+)_(\d+)/, async (ctx) => {
     }
 });
 
-
-
-
-// Команда для перегляду акторів
 bot.hears('👨‍🎤 Актори', async (ctx) => {
     try {
         const actors = await Actor.findAll();
@@ -429,15 +417,13 @@ bot.hears('👨‍🎤 Актори', async (ctx) => {
     }
 });
 
-// Обробка натискання на актора
 bot.action(/actor_(\d+)/, async (ctx) => {
     const actorId = ctx.match[1];
     try {
-        // Знаходимо актора за id
         const actor = await Actor.findByPk(actorId, {
             include: {
                 model: Performance,
-                through: { attributes: [] }, // Ігноруємо проміжну таблицю
+                through: { attributes: [] }, 
             },
         });
 
@@ -446,8 +432,6 @@ bot.action(/actor_(\d+)/, async (ctx) => {
         }
 
         let message = `${actor.first_name} ${actor.last_name} бере участь у таких виставах:\n\n`;
-
-        // Якщо актор має вистави, то виводимо їх
         if (actor.performances.length > 0) {
             actor.performances.forEach((performance) => {
                 message += `🎭 ${performance.title} (тривалість: ${performance.duration} хв)\n`;
@@ -462,8 +446,6 @@ bot.action(/actor_(\d+)/, async (ctx) => {
         ctx.reply('Сталася помилка при завантаженні вистав за актором.');
     }
 });
-
-// Запуск бота
 bot.launch()
     .then(() => console.log('Бот запущений'))
     .catch((err) => console.error('Помилка запуску бота:', err));
