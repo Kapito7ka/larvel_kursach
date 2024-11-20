@@ -327,7 +327,7 @@ bot.action(/genre_(\d+)/, async (ctx) => {
                 return Markup.button.callback(p.title, `performance_${p.id}`);
             });
 
-            ctx.reply('За цим жаром є такі вистави:', Markup.inlineKeyboard(buttons, { columns: 2 }));
+            ctx.reply('За цим жаром є такі вистави, гарного перегляду:', Markup.inlineKeyboard(buttons, { columns: 2 }));
         } else {
             ctx.reply(`Для жанру "${genre.name}" не знайдено жодної вистави.`);
         }
